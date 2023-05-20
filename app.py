@@ -512,7 +512,7 @@ def download_csv():
 
 @app.server.route("/download_excel")
 def download_excel():
-    excel_path = "Data/Reporte_Ponderaciones_SCE.xlsx"  # Reemplaza con la ruta real de tu archivo CSV
+    excel_path = "data/Reporte_Ponderaciones_SCE.xlsx"  # Reemplaza con la ruta real de tu archivo CSV
     return send_file(excel_path, as_attachment=True)
 
 
