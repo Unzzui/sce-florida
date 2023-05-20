@@ -167,8 +167,8 @@ app.title = "Dashboard SCE"
 server = app.server
 
 external_stylesheets = ['styles.css']
-
-
+app.server.static_folder = 'assets'
+app.server.static_url_path = '/assets'
 
 
 
