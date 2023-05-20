@@ -10,6 +10,7 @@ import calendar
 from datetime import datetime as dt
 import numpy as np
 import io
+from werkzeug.serving import run_simple
 
 
 
@@ -515,8 +516,7 @@ def download_excel():
     return send_file(excel_path, as_attachment=True)
 
 
-
 if __name__ == "__main__":
-    app.run_server(debug=True, server='werkzeug')
+    run_simple("localhost", port=8050, application=app.server)
     # Ejecutar la aplicación
 
