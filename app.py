@@ -13,7 +13,6 @@ import io
 
 
 
-base_url = os.environ.get('APP_BASEURL', '')
 
 
 # Leer el archivo CSV utilizando pandas
@@ -167,8 +166,7 @@ app.title = "Dashboard SCE"
 server = app.server
 
 external_stylesheets = ['styles.css']
-app.server.static_folder = 'assets'
-app.server.static_url_path = '/assets'
+
 
 
 
