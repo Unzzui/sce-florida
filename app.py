@@ -162,7 +162,7 @@ def month_line_chart():
     return figure
 
 # Application
-app = dash.Dash(external_stylesheets=[dbc.themes.DARKLY])
+app = dash.Dash(__name__,external_stylesheets=[dbc.themes.DARKLY])
 app.title = "Dashboard SCE"
 server = app.server
 
