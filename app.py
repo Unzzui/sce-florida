@@ -516,7 +516,9 @@ def download_excel():
     return send_file(excel_path, as_attachment=True)
 
 
+
 if __name__ == "__main__":
-    run_simple("localhost", port=8050, application=app.server)
+    port = int(os.environ.get("PORT", 8050))
+    run_simple("0.0.0.0", port, app.server)
     # Ejecutar la aplicación
 
