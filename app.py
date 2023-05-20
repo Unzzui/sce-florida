@@ -254,9 +254,9 @@ app.layout = dbc.Container(
             dbc.Col(
                 html.Div(
                     [
-                        html.Img(src="../assets/img/log_oca.png", style={"width": "50%"}),
+                        html.Img(src=app.get_asset_url("../assets/img/log_oca.png"), style={"width": "50%"}),
                         
-                        html.Img(src="../assets/img/log_enel.png", style={"width": "40%", "margin-top": "-30px"}),
+                        html.Img(src=app.get_asset_url("../assets/img/log_enel.png"), style={"width": "40%", "margin-top": "-30px"}),
                     ],
                     style={"justify-content": "center"}
                 ),
