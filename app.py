@@ -164,6 +164,7 @@ def month_line_chart():
 # Application
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.DARKLY])
 app.title = "Dashboard SCE"
+
 server = app.server
 
 external_stylesheets = ['styles.css']
@@ -244,32 +245,17 @@ navbar = dbc.Navbar(
 )
 
 
-app.index_string = '''
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <link rel="icon" href="/assets/img/favicon.png" type="image/x-icon">
-        <title>{%title%}</title>
-        {%favicon%}
-        {%css%}
-    </head>
-    <body>
-        {%app_entry%}
-        <footer>
-            {%config%}
-            {%scripts%}
-            {%renderer%}
-        </footer>
-    </body>
-</html>
-'''
 
 # Definir el diseño de la aplicación
 app.layout = dbc.Container(
     id="app-container",
     fluid=True,
     children=[
+        html.Link(
+            rel="icon",
+            href="/assets/img/favicon.ico",
+            type="image/x-icon"
+        ),
         navbar,
         dbc.Row(
             dbc.Col(
