@@ -527,7 +527,7 @@ app.layout = dbc.Container(
            dbc.Row(
             dbc.Col(
                 [
-                    html.H3(children="Mapa de Cumplimiento %"),
+                    html.H3(children="Visualización del Cumplimiento por Comuna"),
                     html.P(
                         "El Mapa de Cumplimiento muestra el porcentaje de cumplimiento por comuna. Utiliza diferentes tonalidades de colores para resaltar las áreas con mayor y menor cumplimiento."
                     )
