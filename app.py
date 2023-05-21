@@ -12,6 +12,10 @@ import numpy as np
 import io
 from werkzeug.serving import run_simple
 from dash.dependencies import Input, Output, State
+import json
+from dash import dash_table
+import plotly.io as pio
+import matplotlib.colors as mcolors
 
 
 
@@ -19,11 +23,14 @@ from dash.dependencies import Input, Output, State
 
 # Leer el archivo CSV utilizando pandas
 df = pd.read_csv('data/data.csv', delimiter=";")
-# Filtrar solo por cordillera
+with open('data/all.geojson', 'r') as f:
+    data = json.load(f)
+# Filtrar solo por Florida
 df = df[df['Zonal'] == 'Florida']
 
 # Convertir las fechas numéricas al formato adecuado
 df['Fecha Ejecución del Ticket'] = pd.to_datetime(df['Fecha Ejecución del Ticket'], origin='1899-12-30', unit='D')
+df['Fecha de Inspección'] = pd.to_datetime(df['Fecha de Inspección'], origin='1899-12-30', unit='D')
 
 
 # Reemplazar las comas por puntos y eliminar caracteres no numéricos
@@ -52,6 +59,10 @@ df['Año'] = df['Fecha Ejecución del Ticket'].dt.year
 
 # Se agrupa el mes y año relacionado a la ponderacion
 df_grouped_month_year = df.groupby(['Mes', 'Año'])['Cumplimiento'].mean().reset_index()
+
+# Se adquiere la fecha maxima del registro
+df_max_date = df["Fecha de Inspección"].max()
+df_max_date_formatted = df_max_date.strftime('%d-%m-%Y')
 
 
 # Número de inspecciones de trabajos ejecutados
@@ -162,6 +173,101 @@ def month_line_chart():
 
     return figure
 
+def map_fig():
+    # Convertir la columna "Cumplimiento" a numérico y multiplicar por 100
+    df['Cumplimiento'] = pd.to_numeric(df['Cumplimiento'], errors='coerce') * 100
+
+    # Calcular el promedio de cumplimiento por comuna
+    df_grouped_map = df.groupby('Comuna')['Cumplimiento'].mean().reset_index()
+
+    # Redondear los valores de cumplimiento a 1 decimal
+    df_grouped_map = df_grouped_map.round({'Cumplimiento': 1})
+
+    # Ordenar el DataFrame por el valor de cumplimiento de manera descendente
+    df_grouped_map = df_grouped_map.sort_values(by='Cumplimiento', ascending=False)
+
+    # Obtener la lista de comunas presentes en el archivo CSV
+    comunas_csv = df_grouped_map['Comuna'].tolist()
+
+    # Generar la escala de colores manual con opacidad
+    num_comunas = len(comunas_csv)
+    color_start = (0, 255, 255)  # Cian brillante
+    color_end = (255, 0, 0)  # Rojo
+    colors = []
+    for i in range(num_comunas):
+        r = int(np.interp(i, [0, num_comunas-1], [color_start[0], color_end[0]]))
+        g = int(np.interp(i, [0, num_comunas-1], [color_start[1], color_end[1]]))
+        b = int(np.interp(i, [0, num_comunas-1], [color_start[2], color_end[2]]))
+        color = f"rgba({r}, {g}, {b}, 0.4)"
+        colors.append(color)
+
+    # Crear el objeto de figura
+    figure = go.Figure()
+
+    # Iterar sobre cada comuna presente en el archivo CSV
+    for i, comuna in enumerate(comunas_csv):
+        # Buscar la correspondencia de la comuna en los datos GeoJSON
+        for feature in data['features']:
+            # Obtener el nombre de la comuna en la característica
+            comuna_geojson = feature['properties']['NOM_COM']
+
+            # Verificar si la comuna coincide
+            if comuna == comuna_geojson:
+                # Obtener el porcentaje de cumplimiento para la comuna
+                cumplimiento = df_grouped_map.loc[df_grouped_map['Comuna'] == comuna, 'Cumplimiento'].values[0]
+
+                # Obtener el color correspondiente al índice en la lista colors
+                color = colors[i]
+
+                # Extraer las coordenadas del polígono de la comuna
+                coordinates = feature['geometry']['coordinates'][0]
+
+                # Agregar el polígono a la figura con un color transparente para las comunas del archivo CSV
+                figure.add_trace(go.Scattermapbox(
+                    lat=[coord[1] for coord in coordinates],
+                    lon=[coord[0] for coord in coordinates],
+                    mode='lines',
+                    line=dict(color='rgb(0, 0, 0)', width=2),  # Línea negra
+                    fill='toself',
+                    fillcolor=color,
+                    hovertemplate=f'<b>{comuna}</b><br>Cumplimiento: {cumplimiento}%',
+                ))
+                break
+
+    # Configurar el diseño del mapa
+    figure.update_layout(
+        mapbox=dict(
+            accesstoken='pk.eyJ1IjoidW56enVpIiwiYSI6ImNsaHd2Y2t0ejBqd20zZ24wbjY1bHJoZWcifQ.7_2XYUlLBzkW6giVBSRC_Q',
+            style='dark',
+            center=dict(lat=-33.37, lon=-70.56),
+            zoom=9,
+        ),
+        showlegend=False,
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white")
+    )
+
+    # Agregar la leyenda de colores como anotaciones
+    min_cumplimiento = df_grouped_map['Cumplimiento'].min()
+    max_cumplimiento = df_grouped_map['Cumplimiento'].max()
+    annotations = [
+        dict(
+            xref='paper',
+            yref='paper',
+            x=1,
+            y=0.8 - (i / 20),
+            text=f'{comuna}: {cumplimiento}%',
+            showarrow=False,
+            font=dict(color="white")
+        )
+        for i, (comuna, cumplimiento) in enumerate(zip(comunas_csv, df_grouped_map['Cumplimiento']))
+    ]
+    figure.update_layout(annotations=annotations)
+
+    return figure
+
+
 # Application
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.DARKLY])
 app.title = "Dashboard SCE Florida"
@@ -244,6 +350,7 @@ navbar = dbc.Navbar(
     dark=True,
     sticky="top",
     className="w-100 h-1"
+    
 )
 
 
@@ -275,13 +382,13 @@ app.layout = dbc.Container(
     fluid=True,
     children=[
         
- 
+    navbar_wrapper,
         html.Link(
             rel="icon",
             href="/assets/img/favicon.ico",
             type="image/x-icon"
         ),
-        navbar_wrapper,
+        
         dbc.Row(
             dbc.Col(
                 html.Div(
@@ -290,7 +397,7 @@ app.layout = dbc.Container(
                         
                         html.Img(src=app.get_asset_url("../assets/img/log_enel.png"), style={"width": "40%", "margin-top": "-30px"}),
                     ],
-                    style={"justify-content": "center", "margin-top":"40px"}
+                    style={"justify-content": "center","margin-top":"40px"}
                 ),
                 width={"size": 6, "offset": 3}
             )
@@ -321,7 +428,8 @@ app.layout = dbc.Container(
             dbc.Col(
                 [
                     html.H5(id='charts'),
-                    html.P("El presente Dashboard muestra las inspecciones realizadas desde enero del año 2022, incluyendo la cantidad de inspecciones a trabajos de cuadrillas de emergencias, el promedio ponderado del cumplimiento de las cuadrillas y la desviación estándar como criterio adicional para evaluar la variación de los datos en el periodo. Además, se presentan gráficos de cumplimiento por fecha, KPI's y cumplimiento por supervisor, y se ofrece la opción de descargar la información para realizar análisis personalizados.")
+                    html.P("El presente Dashboard muestra las inspecciones realizadas desde enero del año 2022, incluyendo la cantidad de inspecciones a trabajos de cuadrillas de emergencias, el promedio ponderado del cumplimiento de las cuadrillas y la desviación estándar como criterio adicional para evaluar la variación de los datos en el periodo. Además, se presentan gráficos de cumplimiento por fecha, KPI's y cumplimiento por supervisor, y se ofrece la opción de descargar la información para realizar análisis personalizados."),
+                    html.P(f"Datos actualizados al: {df_max_date_formatted}")
                 ],
                 width="auto"
             ),
@@ -369,8 +477,8 @@ app.layout = dbc.Container(
                     ),
                     width=3,
                     lg=3,
-                    sm=10, 
-                    xs=10,
+                    sm=5, 
+                    xs=7,
                     class_name="text-center",
                     style={"margin-top": "20px"},
                 ),
@@ -387,8 +495,8 @@ app.layout = dbc.Container(
                     ),
                     width=3,
                     lg=3,
-                    sm=10, 
-                    xs=10,
+                    sm=5, 
+                    xs=7,
                     class_name="text-center",
                     style={"margin-top": "20px"},
                 ),
@@ -414,7 +522,31 @@ app.layout = dbc.Container(
             dbc.Col(
                 dcc.Graph(id="supervisor-figure", figure=supervisor_chart()),
             )
+            
         ),
+           dbc.Row(
+            dbc.Col(
+                [
+                    html.H3(children="Mapa de Cumplimiento %"),
+                    html.P(
+                        "El Mapa de Cumplimiento muestra el porcentaje de cumplimiento por comuna. Utiliza diferentes tonalidades de colores para resaltar las áreas con mayor y menor cumplimiento."
+                    )
+                ],
+                width="auto",
+                className="text-center",
+            ),
+            justify="center",
+            style={"margin-bottom": "10px","margin-top":"40px"}
+        ),
+         dbc.Row(
+            dbc.Col(
+                dcc.Graph(id="map-figure", figure=map_fig(),style={'width': '100%', 'height': '90vh'}),
+            )
+            
+            
+        ),
+        
+     
         dbc.Row(
             dbc.Col(
                 html.H3(children="Descargar Datos", id="descargar-seccion"),
@@ -456,7 +588,8 @@ app.layout = dbc.Container(
     
 )
 
-    
+
+
 
 # Callback para actualizar el gráfico según la opción seleccionada
 @app.callback(
@@ -561,7 +694,6 @@ def download_excel():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8050))
-    run_simple("0.0.0.0", port, app.server)
+    app.run_server(debug=True)
     # Ejecutar la aplicación
 
