@@ -290,7 +290,7 @@ app.layout = dbc.Container(
                         
                         html.Img(src=app.get_asset_url("../assets/img/log_enel.png"), style={"width": "40%", "margin-top": "-30px"}),
                     ],
-                    style={"justify-content": "center"}
+                    style={"justify-content": "center", "margin-top":"40px"}
                 ),
                 width={"size": 6, "offset": 3}
             )
