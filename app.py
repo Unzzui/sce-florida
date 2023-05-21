@@ -264,7 +264,8 @@ navbar_wrapper = html.Div(
     children=[
         navbar
     ],
-    className="mx-auto text-center"
+    className="navbar-wrapper mx-auto text-center",
+
 )
 
 
