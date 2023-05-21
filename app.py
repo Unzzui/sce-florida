@@ -11,6 +11,7 @@ from datetime import datetime as dt
 import numpy as np
 import io
 from werkzeug.serving import run_simple
+from dash.dependencies import Input, Output, State
 
 
 
@@ -163,7 +164,7 @@ def month_line_chart():
 
 # Application
 app = dash.Dash(__name__,external_stylesheets=[dbc.themes.DARKLY])
-app.title = "Dashboard SCE"
+app.title = "Dashboard SCE Florida"
 
 server = app.server
 
@@ -218,8 +219,9 @@ kpi4 = dbc.Card(
 
 
 navbar = dbc.Navbar(
-    
     children=[
+        html.Script(src="https://code.jquery.com/jquery-3.5.1.min.js"),
+        html.Script(src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"),
         dbc.NavbarToggler(id="navbar-toggler"),
         dbc.Collapse(
             dbc.Nav(
@@ -228,11 +230,11 @@ navbar = dbc.Navbar(
                     dbc.NavItem(dbc.NavLink(html.A("Gráficos", href="/#charts", className="nav-link-custom"))),
                     dbc.NavItem(dbc.NavLink(html.A("Descargar Datos", href="/#descargar-seccion", className="nav-link-custom"))),
                     dbc.NavItem(dbc.NavLink(html.A("ODIS", href="https://odisdkp.firebaseapp.com", target="_blank", className="nav-link-custom"))),
-                    dbc.NavItem(dbc.NavLink(html.A("Contacto", href="mailto:diego.bravo@ocaglobal.com", className="nav-link-custom"))),
+                    dbc.NavItem(dbc.NavLink(html.A("Contacto", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%20Florida", className="nav-link-custom"))),
 
                 ],
                 navbar=True,
-                className="ml-auto mx-auto",  # Alinea los elementos al centro
+                className="ml-auto mx-auto",
             ),
             id="navbar-collapse",
             navbar=True,
@@ -241,9 +243,29 @@ navbar = dbc.Navbar(
     color="dark",
     dark=True,
     sticky="top",
-    className="w-100 h-1"  # Agregar la clase CSS "w-100"
+    className="w-100 h-1"
 )
 
+
+# Define la función de callback para controlar el despliegue del menú
+@app.callback(
+    Output("navbar-collapse", "is_open"),
+    [Input("navbar-toggler", "n_clicks")],
+    [State("navbar-collapse", "is_open")],
+)
+def toggle_navbar_collapse(n, is_open):
+    if n:
+        return not is_open
+    return is_open
+
+
+
+navbar_wrapper = html.Div(
+    children=[
+        navbar
+    ],
+    className="mx-auto text-center"
+)
 
 
 # Definir el diseño de la aplicación
@@ -251,12 +273,14 @@ app.layout = dbc.Container(
     id="app-container",
     fluid=True,
     children=[
+        
+ 
         html.Link(
             rel="icon",
             href="/assets/img/favicon.ico",
             type="image/x-icon"
         ),
-        navbar,
+        navbar_wrapper,
         dbc.Row(
             dbc.Col(
                 html.Div(
@@ -270,27 +294,28 @@ app.layout = dbc.Container(
                 width={"size": 6, "offset": 3}
             )
         ),
+        
         dbc.Row(
-            dbc.Col(html.H1("Servicio Calidad de emergencias", className="text-center"), width="auto"),
+            dbc.Col(html.H1("Servicio Calidad de Emergencias Florida", className="text-center"), width="auto"),
             justify="center",
             style={"margin-bottom": "2rem"}
         ),
         dbc.Row(
-            dbc.Col(
-                [
-                    html.H2("KPIs"),
-                    dbc.Row(
+                    dbc.Col(
                         [
-                            dbc.Col(kpi1, className="h-100", width=4),
-                            dbc.Col(kpi2, className="h-100", width=4),
-                            dbc.Col(kpi3, className="h-100", width=4),
+                            html.H2("KPIs"),
+                            dbc.Row(
+                                [
+                                    dbc.Col(kpi1, className="h-100", width=4,lg=4 ,sm=10, xs=10),
+                                    dbc.Col(kpi2, className="h-100", width=4, lg=4, sm=10, xs=10),
+                                    dbc.Col(kpi3, className="h-100", width=4, lg=4, sm=10, xs=10),
+                                ],
+                                justify="center",  # Centra los KPIs horizontalmente
+                            ),
                         ],
-                        justify="center",  # Centra los KPIs horizontalmente
-                    ),
-                ],
-                className="mb-4 text-center",
-            )
-        ),
+                        className="mb-4 text-center",
+                    )
+                ),
         dbc.Row(
             dbc.Col(
                 [
@@ -333,16 +358,20 @@ app.layout = dbc.Container(
                 dbc.Col(
                     dbc.Card(
                         [
-                            dbc.CardHeader("Menor Ponderación", className="text-center"),
+                            dbc.CardHeader("Menor Ponderación", className="text-center", ),
                             dbc.CardBody(
                                 html.H2(children=menor_cumplimiento_formatted, className="text-center")
                             ),
-                            dbc.CardFooter(children=numero_ticket_menor)
+                            dbc.CardFooter(children=numero_ticket_menor,)
                         ],
                         color="danger",
                     ),
                     width=3,
-                    class_name="text-center"
+                    lg=3,
+                    sm=10, 
+                    xs=10,
+                    class_name="text-center",
+                    style={"margin-top": "20px"},
                 ),
                 dbc.Col(
                     dbc.Card(
@@ -356,7 +385,11 @@ app.layout = dbc.Container(
                         color="info",
                     ),
                     width=3,
-                    class_name="text-center"
+                    lg=3,
+                    sm=10, 
+                    xs=10,
+                    class_name="text-center",
+                    style={"margin-top": "20px"},
                 ),
             ],
             justify="center",
@@ -370,10 +403,11 @@ app.layout = dbc.Container(
                         "Es importante tener en cuenta que la información relacionada con los supervisores no abarca todos los datos, ya que se implementó después de marzo de 2023 el control de seguimiento de los trabajos realizados por cada supervisor. Por lo tanto, al tomar decisiones basadas en esta información, es necesario considerar que pueden existir desviaciones y se recomienda esperar al menos 6 meses para contar con datos más completos y precisos."
                     )
                 ],
-                width="auto"
+                width="auto",
+                className="text-center",
             ),
             justify="center",
-            style={"margin-bottom": "2rem"}
+            style={"margin-bottom": "2rem","margin-top":"40px"}
         ),
         dbc.Row(
             dbc.Col(
@@ -416,7 +450,9 @@ app.layout = dbc.Container(
             ),
             justify="center"
         )
-    ]
+    ],
+  
+    
 )
 
     
