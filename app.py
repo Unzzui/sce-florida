@@ -244,6 +244,26 @@ navbar = dbc.Navbar(
 )
 
 
+app.index_string = '''
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="icon" href="/assets/img/favicon.png" type="image/x-icon">
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>
+'''
 
 # Definir el diseño de la aplicación
 app.layout = dbc.Container(
