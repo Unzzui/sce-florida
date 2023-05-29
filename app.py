@@ -13,12 +13,8 @@ import io
 from werkzeug.serving import run_simple
 from dash.dependencies import Input, Output, State
 import json
-from dash import dash_table
 import plotly.io as pio
 import matplotlib.colors as mcolors
-
-
-
 
 
 # Leer el archivo CSV utilizando pandas
@@ -29,36 +25,43 @@ with open('data/all.geojson', 'r') as f:
 df = df[df['Zonal'] == 'Florida']
 
 # Convertir las fechas numéricas al formato adecuado
-df['Fecha Ejecución del Ticket'] = pd.to_datetime(df['Fecha Ejecución del Ticket'], origin='1899-12-30', unit='D')
-df['Fecha de Inspección'] = pd.to_datetime(df['Fecha de Inspección'], origin='1899-12-30', unit='D')
+df['Fecha Ejecución del Ticket'] = pd.to_datetime(
+    df['Fecha Ejecución del Ticket'], origin='1899-12-30', unit='D')
+df['Fecha de Inspección'] = pd.to_datetime(
+    df['Fecha de Inspección'], origin='1899-12-30', unit='D')
 
 
 # Reemplazar las comas por puntos y eliminar caracteres no numéricos
-df['Cumplimiento'] = df['Cumplimiento'].str.replace(',', '.').replace('[^\d.]', '', regex=True)
+df['Cumplimiento'] = df['Cumplimiento'].str.replace(
+    ',', '.').replace('[^\d.]', '', regex=True)
 
 # Convertir la columna 'Cumplimiento' a tipo numérico
 df['Cumplimiento'] = pd.to_numeric(df['Cumplimiento'], errors='coerce')
 
 
-
-
-opciones_mes = [{'label': mes.capitalize(), 'value': mes} for mes in df['Mes Ejecución del Ticket'].unique()]
-opciones_ano = [{'label': str(ano), 'value': str(ano)} for ano in df['Año ejecución ticket'].unique()]
+opciones_mes = [{'label': mes.capitalize(), 'value': mes}
+                for mes in df['Mes Ejecución del Ticket'].unique()]
+opciones_ano = [{'label': str(ano), 'value': str(ano)}
+                for ano in df['Año ejecución ticket'].unique()]
 
 # Obtener el porcentaje de cumplimiento por fecha de ejecución del ticket
-df_grouped = df.groupby('Fecha Ejecución del Ticket')['Cumplimiento'].mean().reset_index()
+df_grouped = df.groupby('Fecha Ejecución del Ticket')[
+    'Cumplimiento'].mean().reset_index()
 
 # Obtener el porcentaje de cumplimiento por supervisor
-df_grouped_supervisor = df.groupby('Jefe de Equipo')['Cumplimiento'].mean().reset_index()
+df_grouped_supervisor = df.groupby('Jefe de Equipo')[
+    'Cumplimiento'].mean().reset_index()
 
-df_grouped_supervisor = df_grouped_supervisor.sort_values(by='Cumplimiento', ascending=True)
+df_grouped_supervisor = df_grouped_supervisor.sort_values(
+    by='Cumplimiento', ascending=True)
 
 # Obtener el mes y año de cada una de las fechas
 df['Mes'] = df['Fecha Ejecución del Ticket'].dt.month
 df['Año'] = df['Fecha Ejecución del Ticket'].dt.year
 
 # Se agrupa el mes y año relacionado a la ponderacion
-df_grouped_month_year = df.groupby(['Mes', 'Año'])['Cumplimiento'].mean().reset_index()
+df_grouped_month_year = df.groupby(['Mes', 'Año'])[
+    'Cumplimiento'].mean().reset_index()
 
 # Se adquiere la fecha maxima del registro
 df_max_date = df["Fecha de Inspección"].max()
@@ -69,113 +72,68 @@ df_max_date_formatted = df_max_date.strftime('%d-%m-%Y')
 num_inspecciones = len(df)
 
 # Porcentaje de cumplimiento
-porcentaje_cumplimiento = df['Cumplimiento'].mean() 
+porcentaje_cumplimiento = df['Cumplimiento'].mean()
 porcentaje_cumplimiento_formatted = "{:.2%}".format(porcentaje_cumplimiento)
 
 # Desviación estándar
-desviacion_estandar = df['Cumplimiento'].std() 
+desviacion_estandar = df['Cumplimiento'].std()
 desviacion_estandar_formatted = "{:.2%}".format(desviacion_estandar)
 
 # Coeficiente de variación
 
-coeficiente_variacion = (desviacion_estandar / porcentaje_cumplimiento) 
+coeficiente_variacion = (desviacion_estandar / porcentaje_cumplimiento)
 coeficiente_variacion_formatted = "{:.2%}".format(coeficiente_variacion)
 
 # Obtener el mayor porcentaje de cumplimiento
 
-mayor_cumplimiento = df['Cumplimiento'].max() 
+mayor_cumplimiento = df['Cumplimiento'].max()
 mayor_cumplimiento_formatted = "{:.0%}".format(mayor_cumplimiento)
 
 numero_ticket_mayor = df.loc[df['Cumplimiento'].idxmax(), 'N Ticket']
 
 # Obtener el menor porcentaje de cumplimiento
-menor_cumplimiento = df['Cumplimiento'].min() 
+menor_cumplimiento = df['Cumplimiento'].min()
 menor_cumplimiento_formatted = "{:.0%}".format(menor_cumplimiento)
 numero_ticket_menor = df.loc[df['Cumplimiento'].idxmin(), 'N Ticket']
 
 
-
-
-
 def supervisor_chart():
-        figure = {
-            'data': [
-                go.Bar(
-                    x=df_grouped_supervisor['Jefe de Equipo'],
-                    y=df_grouped_supervisor['Cumplimiento'],
-                    orientation= "v",
-                    marker=dict(color="rgba(56,250,251,1)"),
-                )
-            ],
-            'layout': go.Layout(
-                title="Porcentaje de Cumplimiento por Supervisor",
-                xaxis=dict(
-                    title="Jefe de Equipo",
-                    tickangle=-45,
-                    tickfont=dict(size=8),
-                    gridcolor='#444444',
-                ),
-                yaxis=dict(
-                    title="Porcentaje de Cumplimiento %",
-                    gridcolor='#444444',
-                    tickformat='.0%',
-                ),
-                plot_bgcolor="rgba(0,0,0,0)",
-                paper_bgcolor="rgba(0,0,0,0)",
-                font_color="white",
+    figure = {
+        'data': [
+            go.Bar(
+                x=df_grouped_supervisor['Jefe de Equipo'],
+                y=df_grouped_supervisor['Cumplimiento'],
+                orientation="v",
+                marker=dict(color="rgba(56,250,251,1)"),
             )
-        }
-        return figure
-
-def month_line_chart():
-    # Filtrar por año 2022
-    df_2022 = df[df['Año'] == 2022]
-    df_grouped_month_year_2022 = df_2022.groupby(['Mes', 'Año'])['Cumplimiento'].mean().reset_index()
-
-    # Filtrar por año 2023
-    df_2023 = df[df['Año'] == 2023]
-    df_grouped_month_year_2023 = df_2023.groupby(['Mes', 'Año'])['Cumplimiento'].mean().reset_index()
-
-    # Crear la columna 'Mes' para cada DataFrame
-    df_grouped_month_year_2022['Mes'] = df_grouped_month_year_2022['Mes'].apply(lambda month: calendar.month_abbr[month])
-    df_grouped_month_year_2023['Mes'] = df_grouped_month_year_2023['Mes'].apply(lambda month: calendar.month_abbr[month])
-
-    # Crear el gráfico de líneas
-    figure = go.Figure(data=[
-        go.Scatter(x=df_grouped_month_year_2022['Mes'], y=df_grouped_month_year_2022['Cumplimiento'], name='2022', mode='lines', line=dict(color="rgba(56,250,251,1)")),
-        go.Scatter(x=df_grouped_month_year_2023['Mes'], y=df_grouped_month_year_2023['Cumplimiento'], name='2023', mode='lines', line=dict(color="rgba(255,127,14,1)"))
-    ])
-
-    figure.update_layout(
-        title={
-        'text': "Porcentaje de Cumplimiento por Mes y Año",
-        'x': 0.5,  # Alineación horizontal en el centro
-        'y': 0.9,  # Alineación vertical en la parte superior
-        'xanchor': 'center',  # Alineación horizontal en el centro
-        'yanchor': 'top'  # Alineación vertical en la parte superior
-    },
-        xaxis=dict(
-            title="Mes",
-            tickangle=-45,
-            tickfont=dict(size=9),
-            gridcolor='#444444'
-        ),
-        yaxis=dict(
-            title="Porcentaje de Cumplimiento %",
-            tickformat='.0%',
-            gridcolor='#444444',
-            
-        ),
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white")
-    )
-
+        ],
+        'layout': go.Layout(
+            title="Porcentaje de Cumplimiento por Supervisor",
+            xaxis=dict(
+                title="Jefe de Equipo",
+                tickangle=-45,
+                tickfont=dict(size=8),
+                gridcolor='#444444',
+            ),
+            yaxis=dict(
+                title="Porcentaje de Cumplimiento %",
+                gridcolor='#444444',
+                tickformat='.0%',
+            ),
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color="white",
+        )
+    }
+    
     return figure
+
+
 
 def map_fig():
     # Convertir la columna "Cumplimiento" a numérico y multiplicar por 100
-    df['Cumplimiento'] = pd.to_numeric(df['Cumplimiento'], errors='coerce') * 100
+    df['Cumplimiento'] = pd.to_numeric(
+        df['Cumplimiento'], errors='coerce') * 100
 
     # Calcular el promedio de cumplimiento por comuna
     df_grouped_map = df.groupby('Comuna')['Cumplimiento'].mean().reset_index()
@@ -184,7 +142,8 @@ def map_fig():
     df_grouped_map = df_grouped_map.round({'Cumplimiento': 1})
 
     # Ordenar el DataFrame por el valor de cumplimiento de manera descendente
-    df_grouped_map = df_grouped_map.sort_values(by='Cumplimiento', ascending=False)
+    df_grouped_map = df_grouped_map.sort_values(
+        by='Cumplimiento', ascending=False)
 
     # Obtener la lista de comunas presentes en el archivo CSV
     comunas_csv = df_grouped_map['Comuna'].tolist()
@@ -195,9 +154,12 @@ def map_fig():
     color_end = (255, 0, 0)  # Rojo
     colors = []
     for i in range(num_comunas):
-        r = int(np.interp(i, [0, num_comunas-1], [color_start[0], color_end[0]]))
-        g = int(np.interp(i, [0, num_comunas-1], [color_start[1], color_end[1]]))
-        b = int(np.interp(i, [0, num_comunas-1], [color_start[2], color_end[2]]))
+        r = int(np.interp(i, [0, num_comunas-1],
+                [color_start[0], color_end[0]]))
+        g = int(np.interp(i, [0, num_comunas-1],
+                [color_start[1], color_end[1]]))
+        b = int(np.interp(i, [0, num_comunas-1],
+                [color_start[2], color_end[2]]))
         color = f"rgba({r}, {g}, {b}, 0.4)"
         colors.append(color)
 
@@ -214,7 +176,8 @@ def map_fig():
             # Verificar si la comuna coincide
             if comuna == comuna_geojson:
                 # Obtener el porcentaje de cumplimiento para la comuna
-                cumplimiento = df_grouped_map.loc[df_grouped_map['Comuna'] == comuna, 'Cumplimiento'].values[0]
+                cumplimiento = df_grouped_map.loc[df_grouped_map['Comuna']
+                                                  == comuna, 'Cumplimiento'].values[0]
 
                 # Obtener el color correspondiente al índice en la lista colors
                 color = colors[i]
@@ -269,14 +232,12 @@ def map_fig():
 
 
 # Application
-app = dash.Dash(__name__,external_stylesheets=[dbc.themes.DARKLY])
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])
 app.title = "Dashboard SCE Florida"
 
 server = app.server
 
 external_stylesheets = ['styles.css']
-
-
 
 
 # Define los KPIs
@@ -320,23 +281,28 @@ kpi4 = dbc.Card(
     className="mb-4"
 )
 
-
-
-
-
+# Navbar
 navbar = dbc.Navbar(
     children=[
         html.Script(src="https://code.jquery.com/jquery-3.5.1.min.js"),
-        html.Script(src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"),
+        html.Script(
+            src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"),
         dbc.NavbarToggler(id="navbar-toggler"),
         dbc.Collapse(
             dbc.Nav(
                 [
-                    dbc.NavItem(dbc.NavLink(html.A("Inicio", href="/#", className="nav-link-custom"))),
-                    dbc.NavItem(dbc.NavLink(html.A("Gráficos", href="/#charts", className="nav-link-custom"))),
-                    dbc.NavItem(dbc.NavLink(html.A("Descargar Datos", href="/#descargar-seccion", className="nav-link-custom"))),
-                    dbc.NavItem(dbc.NavLink(html.A("ODIS", href="https://odisdkp.firebaseapp.com", target="_blank", className="nav-link-custom"))),
-                    dbc.NavItem(dbc.NavLink(html.A("Contacto", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%20Florida", className="nav-link-custom"))),
+                    dbc.NavItem(dbc.NavLink(
+                        html.A("Inicio", href="/#", className="nav-link-custom"))),
+                    dbc.NavItem(dbc.NavLink(
+                        html.A("Gráficos", href="/#charts", className="nav-link-custom"))),
+                    dbc.NavItem(dbc.NavLink(html.A(
+                        "Descargar Datos", href="/#descargar-seccion", className="nav-link-custom"))),
+                    dbc.NavItem(dbc.NavLink(html.A(
+                        "ODIS", href="https://odisdkp.firebaseapp.com", target="_blank", className="nav-link-custom"))),
+                     dbc.NavItem(dbc.NavLink(html.A(
+                        "OCA Global", href="https://ocaglobal.com/es", target="_blank", className="nav-link-custom"))),
+                    dbc.NavItem(dbc.NavLink(html.A(
+                        "Contacto", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%20Florida", className="nav-link-custom"))),
 
                 ],
                 navbar=True,
@@ -349,10 +315,41 @@ navbar = dbc.Navbar(
     color="dark",
     dark=True,
     sticky="top",
-    className="w-100 h-1"
-    
+    className="w-100 h-1",
+
+
 )
 
+# Footer
+footer_content = html.Div(
+    [
+        html.P("© 2023 OCA Global - ITO Enel. Todos los derechos reservados."),
+        
+        
+        html.P(
+        [
+            "Información de contacto: ",
+            html.A("diego.bravo@ocaglobal.com", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%20Florida",style={'color': 'inherit', 'text-decoration': 'none'}),
+            " | Teléfono: +56930532461"
+        ]
+    ),
+        html.P(
+            [
+            "Dirección: " ,
+            html.A("Av. Pedro de Valdivia 291, Santiago, Providencia, Región Metropolitana Piso 12.", href="https://goo.gl/maps/wHFFboKasQbkKVh28",target="_blank",style={'color': 'inherit', 'text-decoration': 'none'}),
+               ],
+        ),
+    ]
+)
+
+# Aplica estilos al footer_content
+footer_content_style = {
+    'padding': '20px',
+    'color': 'white',
+    'background-color': '#303030',
+    'text-align': 'center',
+    'font-size': '14px',
+}
 
 # Define la función de callback para controlar el despliegue del menú
 @app.callback(
@@ -364,7 +361,6 @@ def toggle_navbar_collapse(n, is_open):
     if n:
         return not is_open
     return is_open
-
 
 
 navbar_wrapper = html.Div(
@@ -380,67 +376,100 @@ navbar_wrapper = html.Div(
 app.layout = dbc.Container(
     id="app-container",
     fluid=True,
+    style={'font-size':'18px'},
     children=[
-        
-    navbar_wrapper,
+
+        navbar_wrapper,
         html.Link(
             rel="icon",
             href="/assets/img/favicon.ico",
             type="image/x-icon"
         ),
-        
+
         dbc.Row(
             dbc.Col(
                 html.Div(
                     [
-                        html.Img(src=app.get_asset_url("../assets/img/log_oca.png"), style={"width": "50%"}),
-                        
-                        html.Img(src=app.get_asset_url("../assets/img/log_enel.png"), style={"width": "40%", "margin-top": "-30px"}),
+                        html.Img(src=app.get_asset_url(
+                            "../assets/img/log_oca.png"), style={"width": "50%"}),
+
+                        html.Img(src=app.get_asset_url(
+                            "../assets/img/log_enel.png"), style={"width": "40%", "margin-top": "-30px"}),
                     ],
-                    style={"justify-content": "center","margin-top":"40px"}
+                    style={"justify-content": "center", "margin-top": "40px"}
                 ),
                 width={"size": 6, "offset": 3}
             )
         ),
-        
+
         dbc.Row(
-            dbc.Col(html.H1("Servicio Calidad de Emergencias Florida", className="text-center"), width="auto"),
+            dbc.Col(html.H1("Servicio Calidad de Emergencias Florida",
+                    className="text-center"),
+                    width="auto"),
             justify="center",
-            style={"margin-bottom": "2rem"}
+            style={"margin-bottom": "2rem"},
         ),
+        dbc.Col(
+            html.P("El presente Dashboard muestra las inspecciones realizadas por OCA Global ITO Enel desde enero del año 2022. Incluye información sobre la cantidad de inspecciones a trabajos de cuadrillas de emergencia, el promedio ponderado del cumplimiento de las cuadrillas y la desviación estándar como criterio adicional para evaluar la variación de los datos en el periodo. Además, se presentan gráficos de cumplimiento por fecha, KPI's y cumplimiento por supervisor. También se ofrece la opción de descargar la información para realizar análisis personalizados y obtener una visión más detallada."),
+
+        ),
+
         dbc.Row(
-                    dbc.Col(
+            dbc.Col(
+                [
+                    html.H2("KPIs"),
+                    dbc.Row(
                         [
-                            html.H2("KPIs"),
-                            dbc.Row(
-                                [
-                                    dbc.Col(kpi1, className="h-100", width=4,lg=4 ,sm=10, xs=10),
-                                    dbc.Col(kpi2, className="h-100", width=4, lg=4, sm=10, xs=10),
-                                    dbc.Col(kpi3, className="h-100", width=4, lg=4, sm=10, xs=10),
-                                ],
-                                justify="center",  # Centra los KPIs horizontalmente
-                            ),
+                            dbc.Col(kpi1, className="h-100",
+                                    width=4, lg=4, sm=10, xs=10),
+                            dbc.Col(kpi2, className="h-100",
+                                    width=4, lg=4, sm=10, xs=10),
+                            dbc.Col(kpi3, className="h-100",
+                                    width=4, lg=4, sm=10, xs=10),
                         ],
-                        className="mb-4 text-center",
-                    )
-                ),
+                        justify="center",  # Centra los KPIs horizontalmente
+                    ),
+                ],
+                className="mb-4 text-center",
+            )
+        ),
         dbc.Row(
             dbc.Col(
                 [
                     html.H5(id='charts'),
-                    html.P("El presente Dashboard muestra las inspecciones realizadas desde enero del año 2022, incluyendo la cantidad de inspecciones a trabajos de cuadrillas de emergencias, el promedio ponderado del cumplimiento de las cuadrillas y la desviación estándar como criterio adicional para evaluar la variación de los datos en el periodo. Además, se presentan gráficos de cumplimiento por fecha, KPI's y cumplimiento por supervisor, y se ofrece la opción de descargar la información para realizar análisis personalizados."),
+                    html.P("1.- N° Trabajos Ejecutados: Este valor refleja la cantidad de inspecciones llevadas a cabo  en los trabajos realizados por las curadrillas de emergencia."),
+                    html.P("2.- Porcentaje de Cumplimiento: Representa el promedio ponderado basado en diversos indicadores, evaluando el grado de cumplimiento de las cuadrillas en relación a los estándares establecidos."),
+                    html.P("3.- Desviación Estándar: Esta medida indica la variación en el cumplimiento dentro del conjunto de datos. Una desviación estándar más cercana a 0% sugiere una menor variabilidad y consistencia en el cumplimiento de las cuadrillas."),
                     html.P(f"Datos actualizados al: {df_max_date_formatted}")
                 ],
                 width="auto"
             ),
             style={"margin-bottom": "2rem"}
         ),
+
+          dbc.Row(
+            dbc.Col(
+                dbc.Tabs(
+                    [
+                        dbc.Tab(label='Línea', tab_id='line-month'),
+                        dbc.Tab(label="Barras", tab_id='bar-month'),
+                    ],
+                    id='grafico-type-month',
+                    active_tab='line-month',
+                ),
+            ),
+        ),
         dbc.Row(
+            dbc.Col(
+                dcc.Graph(id="month-figure"),
+            )
+        ),
+            dbc.Row(
             dbc.Col(
                 dbc.Tabs(
                     [
                         dbc.Tab(label='Dispersión', tab_id='scatter'),
-                        dbc.Tab(label='Línea', tab_id='line')
+                        dbc.Tab(label='Línea', tab_id='line'),
                     ],
                     id='grafico-type',
                     active_tab='scatter',
@@ -452,24 +481,25 @@ app.layout = dbc.Container(
                 dcc.Graph(id="grafico-cumplimiento"),
             )
         ),
-        dbc.Row(
-            dbc.Col(
-                dcc.Graph(id="month-line-figure", figure=month_line_chart()),
-            )
-        ),
+   
         dbc.Row(
             dbc.Col(html.H3(children="Records"), width="auto"),
             justify="center",
             style={"margin-top": "2rem", "margin-bottom": "1rem"}
         ),
         dbc.Row(
+            html.P("En esta sección se encontraran los datos de menor y mayor ponderación correspondientes a las inspecciones realizadas. Estos registros representan los extremos en términos de cumplimiento dentro del conjunto de datos. Además, se proporciona el número de incidencia asociado a cada registro para facilitar su análisis y seguimiento correspondiente."),
+        ),
+        dbc.Row(
             [
                 dbc.Col(
                     dbc.Card(
                         [
-                            dbc.CardHeader("Menor Ponderación", className="text-center", ),
+                            dbc.CardHeader("Menor Ponderación",
+                                           className="text-center", ),
                             dbc.CardBody(
-                                html.H2(children=menor_cumplimiento_formatted, className="text-center")
+                                html.H2(
+                                    children=menor_cumplimiento_formatted, className="text-center")
                             ),
                             dbc.CardFooter(children=numero_ticket_menor,)
                         ],
@@ -477,7 +507,7 @@ app.layout = dbc.Container(
                     ),
                     width=3,
                     lg=3,
-                    sm=5, 
+                    sm=5,
                     xs=7,
                     class_name="text-center",
                     style={"margin-top": "20px"},
@@ -485,9 +515,11 @@ app.layout = dbc.Container(
                 dbc.Col(
                     dbc.Card(
                         [
-                            dbc.CardHeader("Mayor Ponderación", className="text-center"),
+                            dbc.CardHeader("Mayor Ponderación",
+                                           className="text-center"),
                             dbc.CardBody(
-                                html.H2(children=mayor_cumplimiento_formatted, className="text-center")
+                                html.H2(
+                                    children=mayor_cumplimiento_formatted, className="text-center")
                             ),
                             dbc.CardFooter(children=numero_ticket_mayor)
                         ],
@@ -495,7 +527,7 @@ app.layout = dbc.Container(
                     ),
                     width=3,
                     lg=3,
-                    sm=5, 
+                    sm=5,
                     xs=7,
                     class_name="text-center",
                     style={"margin-top": "20px"},
@@ -516,15 +548,17 @@ app.layout = dbc.Container(
                 className="text-center",
             ),
             justify="center",
-            style={"margin-bottom": "2rem","margin-top":"40px"}
+            style={"margin-bottom": "2rem", "margin-top": "40px"}
         ),
         dbc.Row(
+        [
             dbc.Col(
-                dcc.Graph(id="supervisor-figure", figure=supervisor_chart()),
+                dcc.Graph(id="supervisor-figure", figure=supervisor_chart())
             )
-            
-        ),
-           dbc.Row(
+        ]
+    ),
+        
+        dbc.Row(
             dbc.Col(
                 [
                     html.H3(children="Visualización del Cumplimiento por Comuna"),
@@ -534,19 +568,21 @@ app.layout = dbc.Container(
                 ],
                 width="auto",
                 className="text-center",
+
             ),
             justify="center",
-            style={"margin-bottom": "10px","margin-top":"40px"}
+            style={"margin-bottom": "10px", "margin-top": "40px"}
         ),
-         dbc.Row(
+        dbc.Row(
             dbc.Col(
-                dcc.Graph(id="map-figure", figure=map_fig(),style={'width': '100%', 'height': '90vh'}),
+                dcc.Graph(id="map-figure", figure=map_fig(),
+                          style={'width': '100%', 'height': '90vh'}),
             )
-            
-            
+
+
         ),
-        
-     
+
+
         dbc.Row(
             dbc.Col(
                 html.H3(children="Descargar Datos", id="descargar-seccion"),
@@ -571,24 +607,121 @@ app.layout = dbc.Container(
                     className="text-center my-4",
                     children=[
                         html.A(
-                            html.Button("Descargar CSV", className="btn btn-info", style={"margin-right": "10px"}),
+                            html.Button(
+                                "Descargar CSV", className="btn btn-info", style={"margin-right": "10px"}),
                             href="/download_csv"
                         ),
                         html.A(
-                            html.Button("Descargar Excel", className="btn btn-info ml-10"),
+                            html.Button("Descargar Excel",
+                                        className="btn btn-info ml-10"),
                             href="/download_excel"
                         ),
                     ]
                 ),
             ),
             justify="center"
-        )
+        ),
+        
+        html.Div(
+            footer_content,
+            style=footer_content_style
+        ),
     ],
-  
     
 )
 
 
+# Callback para actualizar el gráfico según la opción seleccionada
+@app.callback(
+    Output("month-figure", "figure"),
+    Input("grafico-type-month", "active_tab")
+)
+def month_line_chart(active_tab):
+    # Filtrar por año 2022
+    df_2022 = df[df['Año'] == 2022]
+    df_grouped_month_year_2022 = df_2022.groupby(
+        ['Mes', 'Año'])['Cumplimiento'].mean().reset_index()
+
+    # Filtrar por año 2023
+    df_2023 = df[df['Año'] == 2023]
+    df_grouped_month_year_2023 = df_2023.groupby(
+        ['Mes', 'Año'])['Cumplimiento'].mean().reset_index()
+
+    # Crear la columna 'Mes' para cada DataFrame
+    df_grouped_month_year_2022['Mes'] = df_grouped_month_year_2022['Mes'].apply(
+        lambda month: calendar.month_abbr[month])
+    df_grouped_month_year_2023['Mes'] = df_grouped_month_year_2023['Mes'].apply(
+        lambda month: calendar.month_abbr[month])
+    df_grouped_month_year_2022['Cumplimiento'] /= 100  
+    df_grouped_month_year_2023['Cumplimiento'] /= 100  
+
+    if active_tab == 'line-month':
+        
+    # Crear el gráfico de líneas
+        figure = go.Figure(data=[
+            go.Scatter(x=df_grouped_month_year_2022['Mes'], y=df_grouped_month_year_2022['Cumplimiento'],
+                    name='2022', mode='lines', line=dict(color="rgba(56,250,251,1)")),
+            go.Scatter(x=df_grouped_month_year_2023['Mes'], y=df_grouped_month_year_2023['Cumplimiento'],
+                    name='2023', mode='lines', line=dict(color="rgba(255,127,14,1)"))
+        ])
+
+        figure.update_layout(
+            title={ 
+                'text': "Porcentaje de Cumplimiento por Mes y Año",
+                'x': 0.5,  # Alineación horizontal en el centro
+                'y': 0.9,  # Alineación vertical en la parte superior
+                'xanchor': 'center',  # Alineación horizontal en el centro
+                'yanchor': 'top'  # Alineación vertical en la parte superior
+            },
+            xaxis=dict(
+                title="Mes",
+                tickangle=-45,
+                tickfont=dict(size=9),
+                gridcolor='#444444'
+            ),
+            yaxis=dict(
+                title="Porcentaje de Cumplimiento %",
+                tickformat='.0%',
+                gridcolor='#444444',
+
+            ),
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="white")
+        )
+    elif active_tab == 'bar-month':
+        figure = go.Figure(data=[
+        go.Bar(x=df_grouped_month_year_2022['Mes'], y=df_grouped_month_year_2022['Cumplimiento'],
+            name='2022', marker=dict(color="rgba(56,250,251,1)")),
+        go.Bar(x=df_grouped_month_year_2023['Mes'], y=df_grouped_month_year_2023['Cumplimiento'],
+            name='2023', marker=dict(color="rgba(255,127,14,1)"))
+    ])
+
+    figure.update_layout(
+        title={
+            'text': "Porcentaje de Cumplimiento por Mes y Año",
+            'x': 0.5,
+            'y': 0.9,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        xaxis=dict(
+            title="Mes",
+            tickangle=-45,
+            tickfont=dict(size=9),
+            gridcolor='#444444'
+        ),
+        yaxis=dict(
+            title="Porcentaje de Cumplimiento %",
+            tickformat='.0%',
+            gridcolor='#444444',
+           
+        ),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="white")
+    )
+    return figure
 
 
 # Callback para actualizar el gráfico según la opción seleccionada
@@ -598,7 +731,7 @@ app.layout = dbc.Container(
 )
 def update_grafico_cumplimiento(active_tab):
     if active_tab == "scatter":
-        
+
         # Gráfico de dispersión
         figure = {
             'data': [
@@ -610,7 +743,7 @@ def update_grafico_cumplimiento(active_tab):
                 )
             ],
             'layout': go.Layout(
-                title="Porcentaje de cumplimiento por día",
+                title="Porcentaje de Cumplimiento por día",
                 xaxis=dict(
                     title="Fecha de Ejecución del Ticket",
                     tickformat="%d-%b-%Y",
@@ -664,9 +797,6 @@ def update_grafico_cumplimiento(active_tab):
     return figure
 
 
-    
-    
-    
 @app.server.route("/download_csv")
 def download_csv():
     # Guardar el DataFrame en un archivo CSV en memoria
@@ -678,22 +808,19 @@ def download_csv():
     mem_file.seek(0)
     now = dt.now().strftime("%d-%m-%y")
 
-
     # Configurar los encabezados y opciones de descarga
 
-
     # Devolver el archivo CSV generado como respuesta
-    return send_file(mem_file, mimetype="text/csv", as_attachment=True,download_name=f"data_{now}.csv")
+    return send_file(mem_file, mimetype="text/csv", as_attachment=True, download_name=f"data_{now}.csv")
 
 
 @app.server.route("/download_excel")
 def download_excel():
-    excel_path = "data/Reporte_Ponderaciones_SCE.xlsx"  # Reemplaza con la ruta real de tu archivo CSV
+    # Reemplaza con la ruta real de tu archivo CSV
+    excel_path = "data/Reporte_Ponderaciones_SCE.xlsx"
     return send_file(excel_path, as_attachment=True)
 
-
+# Ejecutar la aplicación
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-    # Ejecutar la aplicación
-
