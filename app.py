@@ -437,7 +437,7 @@ app.layout = dbc.Container(
             dbc.Col(
                 [
                     html.H5(id='charts'),
-                    html.P("1.- N° Trabajos Ejecutados: Este valor refleja la cantidad de inspecciones llevadas a cabo  en los trabajos realizados por las curadrillas de emergencia."),
+                    html.P("1.- N° Trabajos Ejecutados: Este valor refleja la cantidad de inspecciones llevadas a cabo  en los trabajos realizados por las cuadrillas de emergencia."),
                     html.P("2.- Porcentaje de Cumplimiento: Representa el promedio ponderado basado en diversos indicadores, evaluando el grado de cumplimiento de las cuadrillas en relación a los estándares establecidos."),
                     html.P("3.- Desviación Estándar: Esta medida indica la variación en el cumplimiento dentro del conjunto de datos. Una desviación estándar más cercana a 0% sugiere una menor variabilidad y consistencia en el cumplimiento de las cuadrillas."),
                     html.P(f"Datos actualizados al: {df_max_date_formatted}")
