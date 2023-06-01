@@ -13,6 +13,7 @@ import io
 from werkzeug.serving import run_simple
 from dash.dependencies import Input, Output, State
 import json
+from dash import dash_table
 import plotly.io as pio
 import matplotlib.colors as mcolors
 
@@ -104,6 +105,8 @@ def supervisor_chart():
                 x=df_grouped_supervisor['Jefe de Equipo'],
                 y=df_grouped_supervisor['Cumplimiento'],
                 orientation="v",
+                hovertemplate='<b>Jefe de Equipo: %{x}</b><br>' +
+                              'Porcentaje de Cumplimiento: %{y:.0%}<extra></extra>',
                 marker=dict(color="rgba(56,250,251,1)"),
             )
         ],
@@ -112,7 +115,7 @@ def supervisor_chart():
             xaxis=dict(
                 title="Jefe de Equipo",
                 tickangle=-45,
-                tickfont=dict(size=8),
+                tickfont=dict(size=6),
                 gridcolor='#444444',
             ),
             yaxis=dict(
@@ -125,9 +128,8 @@ def supervisor_chart():
             font_color="white",
         )
     }
-    
-    return figure
 
+    return figure
 
 
 def map_fig():
@@ -218,10 +220,10 @@ def map_fig():
         dict(
             xref='paper',
             yref='paper',
-            x=1,
-            y=0.8 - (i / 20),
+            x=0.9,
+            y=0.7 - (i / 10),
             text=f'{comuna}: {cumplimiento}%',
-            showarrow=False,
+            showarrow=True,
             font=dict(color="white")
         )
         for i, (comuna, cumplimiento) in enumerate(zip(comunas_csv, df_grouped_map['Cumplimiento']))
@@ -299,10 +301,10 @@ navbar = dbc.Navbar(
                         "Descargar Datos", href="/#descargar-seccion", className="nav-link-custom"))),
                     dbc.NavItem(dbc.NavLink(html.A(
                         "ODIS", href="https://odisdkp.firebaseapp.com", target="_blank", className="nav-link-custom"))),
-                     dbc.NavItem(dbc.NavLink(html.A(
+                    dbc.NavItem(dbc.NavLink(html.A(
                         "OCA Global", href="https://ocaglobal.com/es", target="_blank", className="nav-link-custom"))),
                     dbc.NavItem(dbc.NavLink(html.A(
-                        "Contacto", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%20Florida", className="nav-link-custom"))),
+                        "Contacto", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%Florida", className="nav-link-custom"))),
 
                 ],
                 navbar=True,
@@ -324,21 +326,24 @@ navbar = dbc.Navbar(
 footer_content = html.Div(
     [
         html.P("© 2023 OCA Global - ITO Enel. Todos los derechos reservados."),
-        
-        
-        html.P(
-        [
-            "Información de contacto: ",
-            html.A("diego.bravo@ocaglobal.com", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%20Florida",style={'color': 'inherit', 'text-decoration': 'none'}),
-            " | Teléfono: +56930532461"
-        ]
-    ),
+
+
         html.P(
             [
-            "Dirección: " ,
-            html.A("Av. Pedro de Valdivia 291, Santiago, Providencia, Región Metropolitana Piso 12.", href="https://goo.gl/maps/wHFFboKasQbkKVh28",target="_blank",style={'color': 'inherit', 'text-decoration': 'none'}),
-               ],
+                "Información de contacto: ",
+                html.A("diego.bravo@ocaglobal.com", href="mailto:diego.bravo@ocaglobal.com?subject=Consulta%20SCE%Florida",
+                       style={'color': 'inherit', 'text-decoration': 'none'}),
+                " | Teléfono: +56930532461"
+            ]
         ),
+        html.P(
+            [
+                "Dirección: ",
+                html.A("Av. Pedro de Valdivia 291, Santiago, Providencia, Región Metropolitana Piso 12.",
+                       href="https://goo.gl/maps/wHFFboKasQbkKVh28", target="_blank", style={'color': 'inherit', 'text-decoration': 'none'}),
+            ],
+        ),
+        # Agrega más contenido según sea necesario
     ]
 )
 
@@ -352,6 +357,8 @@ footer_content_style = {
 }
 
 # Define la función de callback para controlar el despliegue del menú
+
+
 @app.callback(
     Output("navbar-collapse", "is_open"),
     [Input("navbar-toggler", "n_clicks")],
@@ -376,7 +383,7 @@ navbar_wrapper = html.Div(
 app.layout = dbc.Container(
     id="app-container",
     fluid=True,
-    style={'font-size':'18px'},
+    style={'font-size': '18px'},
     children=[
 
         navbar_wrapper,
@@ -406,18 +413,23 @@ app.layout = dbc.Container(
             dbc.Col(html.H1("Servicio Calidad de Emergencias Florida",
                     className="text-center"),
                     width="auto"),
-            justify="center",
-            style={"margin-bottom": "2rem"},
+            justify='center',
+            style={"margin-bottom": "2rem", 'text-align': 'center'},
         ),
-        dbc.Col(
-            html.P("El presente Dashboard muestra las inspecciones realizadas por OCA Global ITO Enel desde enero del año 2022. Incluye información sobre la cantidad de inspecciones a trabajos de cuadrillas de emergencia, el promedio ponderado del cumplimiento de las cuadrillas y la desviación estándar como criterio adicional para evaluar la variación de los datos en el periodo. Además, se presentan gráficos de cumplimiento por fecha, KPI's y cumplimiento por supervisor. También se ofrece la opción de descargar la información para realizar análisis personalizados y obtener una visión más detallada."),
-
+        dbc.Col([
+            html.P("El presente dashboard muestra los resultados de las inspecciones realizadas por OCA Global desde enero de 2022. Proporciona información relevante sobre la cantidad de inspecciones realizadas en trabajos de cuadrillas de emergencia, el promedio ponderado de cumplimiento de las cuadrillas y la desviación estándar como un criterio adicional para evaluar la variación de los datos durante el período. También se presentan gráficos que muestran el cumplimiento por fecha, los indicadores clave de rendimiento (KPI) y el cumplimiento por supervisor."),
+            html.P("Además, se ofrece la opción de descargar la información para realizar un análisis personalizados y obtener una visión más detallada de los datos."),
+            html.P(""" “En OCA no nos importa donde vayan nuestros clientes, les seguimos
+allá donde vayan y trabajamos para garantizar que ni ayer, ni hoy, ni mañana nada quedará dejado al azar.”""",
+                   ),
+        ],
+            style={'text-align': 'center', 'margin-bottom': '40px'}
         ),
 
         dbc.Row(
             dbc.Col(
                 [
-                    html.H2("KPIs"),
+                    html.H2("KPIs", style={'margin-bottom': '30px'}),
                     dbc.Row(
                         [
                             dbc.Col(kpi1, className="h-100",
@@ -437,17 +449,17 @@ app.layout = dbc.Container(
             dbc.Col(
                 [
                     html.H5(id='charts'),
-                    html.P("1.- N° Trabajos Ejecutados: Este valor refleja la cantidad de inspecciones llevadas a cabo  en los trabajos realizados por las cuadrillas de emergencia."),
+                    html.P("1.- N° Trabajos Ejecutados: Este valor refleja la cantidad de inspecciones llevadas a cabo  en los trabajos realizados por las curadrillas de emergencia."),
                     html.P("2.- Porcentaje de Cumplimiento: Representa el promedio ponderado basado en diversos indicadores, evaluando el grado de cumplimiento de las cuadrillas en relación a los estándares establecidos."),
                     html.P("3.- Desviación Estándar: Esta medida indica la variación en el cumplimiento dentro del conjunto de datos. Una desviación estándar más cercana a 0% sugiere una menor variabilidad y consistencia en el cumplimiento de las cuadrillas."),
                     html.P(f"Datos actualizados al: {df_max_date_formatted}")
                 ],
                 width="auto"
             ),
-            style={"margin-bottom": "2rem"}
+            style={"margin-bottom": "2rem", 'text-align': 'center'}
         ),
 
-          dbc.Row(
+        dbc.Row(
             dbc.Col(
                 dbc.Tabs(
                     [
@@ -464,7 +476,7 @@ app.layout = dbc.Container(
                 dcc.Graph(id="month-figure"),
             )
         ),
-            dbc.Row(
+        dbc.Row(
             dbc.Col(
                 dbc.Tabs(
                     [
@@ -481,14 +493,15 @@ app.layout = dbc.Container(
                 dcc.Graph(id="grafico-cumplimiento"),
             )
         ),
-   
+
         dbc.Row(
             dbc.Col(html.H3(children="Records"), width="auto"),
             justify="center",
             style={"margin-top": "2rem", "margin-bottom": "1rem"}
         ),
         dbc.Row(
-            html.P("En esta sección se encontraran los datos de menor y mayor ponderación correspondientes a las inspecciones realizadas. Estos registros representan los extremos en términos de cumplimiento dentro del conjunto de datos. Además, se proporciona el número de incidencia asociado a cada registro para facilitar su análisis y seguimiento correspondiente."),
+            html.P("En esta sección se encontraran los datos de menor y mayor ponderación correspondientes a las inspecciones realizadas. Estos registros representan los extremos en términos de cumplimiento dentro del conjunto de datos. Además, se proporciona el número de incidencia asociado a cada registro para facilitar su análisis y seguimiento correspondiente.", style={
+                   'text-align': 'center'}),
         ),
         dbc.Row(
             [
@@ -541,7 +554,7 @@ app.layout = dbc.Container(
                 [
                     html.H3(children="Cumplimiento por Supervisores %"),
                     html.P(
-                        "Es importante tener en cuenta que la información relacionada con los supervisores no abarca todos los datos, ya que se implementó después de marzo de 2023 el control de seguimiento de los trabajos realizados por cada supervisor. Por lo tanto, al tomar decisiones basadas en esta información, es necesario considerar que pueden existir desviaciones y se recomienda esperar al menos 6 meses para contar con datos más completos y precisos."
+                        "La información proporcionada muestra el nivel de cumplimiento por supervisor, los datos están ordenados de manera ascendente para facilitar su visualización."
                     )
                 ],
                 width="auto",
@@ -550,14 +563,18 @@ app.layout = dbc.Container(
             justify="center",
             style={"margin-bottom": "2rem", "margin-top": "40px"}
         ),
+       # Agregar la tabla debajo del gráfico
         dbc.Row(
-        [
-            dbc.Col(
-                dcc.Graph(id="supervisor-figure", figure=supervisor_chart())
-            )
-        ]
-    ),
-        
+            [
+                dbc.Col(
+                    dcc.Graph(id="supervisor-figure",
+                              figure=supervisor_chart())
+                )
+            ]
+        ),
+
+
+
         dbc.Row(
             dbc.Col(
                 [
@@ -589,7 +606,7 @@ app.layout = dbc.Container(
                 width="auto"
             ),
             justify="center",
-            style={"margin-top": "5rem", "margin-bottom": "1rem"}
+            style={"margin-bottom": "1rem"}
         ),
         dbc.Row(
             dbc.Col(
@@ -599,7 +616,7 @@ app.layout = dbc.Container(
                 width="auto"
             ),
             justify="center",
-            style={"margin-bottom": "1rem"}
+            style={"margin-bottom": "1rem", 'text-align': 'center'}
         ),
         dbc.Row(
             dbc.Col(
@@ -621,13 +638,13 @@ app.layout = dbc.Container(
             ),
             justify="center"
         ),
-        
+
         html.Div(
             footer_content,
             style=footer_content_style
         ),
     ],
-    
+
 )
 
 
@@ -652,32 +669,39 @@ def month_line_chart(active_tab):
         lambda month: calendar.month_abbr[month])
     df_grouped_month_year_2023['Mes'] = df_grouped_month_year_2023['Mes'].apply(
         lambda month: calendar.month_abbr[month])
-    df_grouped_month_year_2022['Cumplimiento'] /= 100  
-    df_grouped_month_year_2023['Cumplimiento'] /= 100  
+    # Multiplica por 100 para obtener un rango de 0 a 100
+    df_grouped_month_year_2022['Cumplimiento'] /= 100
+    # Multiplica por 100 para obtener un rango de 0 a 100
+    df_grouped_month_year_2023['Cumplimiento'] /= 100
 
     if active_tab == 'line-month':
-        
-    # Crear el gráfico de líneas
+
+        # Crear el gráfico de líneas
         figure = go.Figure(data=[
-            go.Scatter(x=df_grouped_month_year_2022['Mes'], y=df_grouped_month_year_2022['Cumplimiento'],
-                    name='2022', mode='lines', line=dict(color="rgba(56,250,251,1)")),
+            go.Scatter(x=df_grouped_month_year_2022['Mes'],
+                       y=df_grouped_month_year_2022['Cumplimiento'],
+                       name='2022',
+                       mode='lines',
+                       line=dict(color="rgba(56,250,251,1)")
+                       ),
             go.Scatter(x=df_grouped_month_year_2023['Mes'], y=df_grouped_month_year_2023['Cumplimiento'],
-                    name='2023', mode='lines', line=dict(color="rgba(255,127,14,1)"))
+                       name='2023', mode='lines', line=dict(color="rgba(255,127,14,1)"))
         ])
 
         figure.update_layout(
-            title={ 
+            title={
                 'text': "Porcentaje de Cumplimiento por Mes y Año",
                 'x': 0.5,  # Alineación horizontal en el centro
                 'y': 0.9,  # Alineación vertical en la parte superior
                 'xanchor': 'center',  # Alineación horizontal en el centro
                 'yanchor': 'top'  # Alineación vertical en la parte superior
             },
+
             xaxis=dict(
                 title="Mes",
                 tickangle=-45,
                 tickfont=dict(size=9),
-                gridcolor='#444444'
+                gridcolor='#444444',
             ),
             yaxis=dict(
                 title="Porcentaje de Cumplimiento %",
@@ -691,11 +715,11 @@ def month_line_chart(active_tab):
         )
     elif active_tab == 'bar-month':
         figure = go.Figure(data=[
-        go.Bar(x=df_grouped_month_year_2022['Mes'], y=df_grouped_month_year_2022['Cumplimiento'],
-            name='2022', marker=dict(color="rgba(56,250,251,1)")),
-        go.Bar(x=df_grouped_month_year_2023['Mes'], y=df_grouped_month_year_2023['Cumplimiento'],
-            name='2023', marker=dict(color="rgba(255,127,14,1)"))
-    ])
+            go.Bar(x=df_grouped_month_year_2022['Mes'], y=df_grouped_month_year_2022['Cumplimiento'],
+                   name='2022', marker=dict(color="rgba(56,250,251,1)")),
+            go.Bar(x=df_grouped_month_year_2023['Mes'], y=df_grouped_month_year_2023['Cumplimiento'],
+                   name='2023', marker=dict(color="rgba(255,127,14,1)"))
+        ])
 
     figure.update_layout(
         title={
@@ -715,7 +739,7 @@ def month_line_chart(active_tab):
             title="Porcentaje de Cumplimiento %",
             tickformat='.0%',
             gridcolor='#444444',
-           
+
         ),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
@@ -820,7 +844,7 @@ def download_excel():
     excel_path = "data/Reporte_Ponderaciones_SCE.xlsx"
     return send_file(excel_path, as_attachment=True)
 
-# Ejecutar la aplicación
 
+# Ejecutar la aplicación
 if __name__ == "__main__":
     app.run_server(debug=True)
