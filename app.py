@@ -221,7 +221,7 @@ def map_fig():
             xref='paper',
             yref='paper',
             x=0.9,
-            y=0.7 - (i / 12),
+            y=0.8 - (i / 12),
             text=f'{comuna}: {cumplimiento}%',
             showarrow=True,
             font=dict(color="white")
