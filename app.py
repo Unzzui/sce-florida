@@ -573,7 +573,7 @@ allá donde vayan y trabajamos para garantizar que ni ayer, ni hoy, ni mañana n
             [
                 dbc.Col(
                     dcc.Graph(id="supervisor-figure",
-                              figure=supervisor_chart())
+                              figure=supervisor_chart(),config=display_bar_logo)
                 )
             ]
         ),
